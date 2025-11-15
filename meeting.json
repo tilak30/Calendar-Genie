@@ -1,0 +1,184 @@
+{
+  "meetings": [
+    {
+      "meeting_id": "class_001",
+      "title": "Advanced Data Structures - Lecture",
+      "description": "Covers binary search trees, AVL trees, heap data structures. Midterm exam in 2 weeks.",
+      "location": "Room 301, Engineering Building",
+      "start_time": "2025-11-20T10:00:00Z",
+      "end_time": "2025-11-20T11:30:00Z",
+      "participants": [
+        {
+          "email": "student@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        },
+        {
+          "email": "prof_smith@nyu.edu",
+          "name": "Prof. Smith",
+          "is_organizer": true
+        }
+      ]
+    },
+    {
+      "meeting_id": "office_hours_001",
+      "title": "Office Hours - Data Structures with Prof. Smith",
+      "description": "Discuss assignment 3 feedback and clarify AVL tree rotations. Need to ask about exam prep strategy.",
+      "location": "Prof Smith's Office, Room 425",
+      "start_time": "2025-11-20T14:00:00Z",
+      "end_time": "2025-11-20T14:30:00Z",
+      "participants": [
+        {
+          "email": "student@nyu.edu",
+          "name": "You",
+          "is_organizer": true
+        },
+        {
+          "email": "prof_smith@nyu.edu",
+          "name": "Prof. Smith",
+          "is_organizer": false
+        }
+      ]
+    },
+    {
+      "meeting_id": "group_project_001",
+      "title": "Team Meeting - Cloud Infrastructure Project",
+      "description": "Divide tasks for AWS deployment project. Deadline: Dec 5. Need to discuss architecture and assign roles.",
+      "location": "https://meet.google.com/abc-def-ghi",
+      "start_time": "2025-11-21T18:00:00Z",
+      "end_time": "2025-11-21T19:00:00Z",
+      "participants": [
+        {
+          "email": "student@nyu.edu",
+          "name": "You",
+          "is_organizer": true
+        },
+        {
+          "email": "teammate1@nyu.edu",
+          "name": "Alice",
+          "is_organizer": false
+        },
+        {
+          "email": "teammate2@nyu.edu",
+          "name": "Bob",
+          "is_organizer": false
+        },
+        {
+          "email": "teammate3@nyu.edu",
+          "name": "Charlie",
+          "is_organizer": false
+        }
+      ]
+    },
+    {
+      "meeting_id": "class_002",
+      "title": "Machine Learning Fundamentals - Lab",
+      "description": "Hands-on lab session on neural networks. Implement a simple CNN for MNIST dataset.",
+      "location": "Room 210, Tech Center",
+      "start_time": "2025-11-21T14:00:00Z",
+      "end_time": "2025-11-21T15:30:00Z",
+      "participants": [
+        {
+          "email": "student@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        },
+        {
+          "email": "prof_ml@nyu.edu",
+          "name": "Prof. Chen",
+          "is_organizer": true
+        }
+      ]
+    },
+    {
+      "meeting_id": "interview_prep_001",
+      "title": "Mock Interview - Internship Interview Prep",
+      "description": "Mock technical interview for tech internship at startup. Focus on system design and coding questions.",
+      "location": "Room 150, Career Center",
+      "start_time": "2025-11-22T13:00:00Z",
+      "end_time": "2025-11-22T14:00:00Z",
+      "participants": [
+        {
+          "email": "student@nyu.edu",
+          "name": "You",
+          "is_organizer": true
+        },
+        {
+          "email": "mentor@company.com",
+          "name": "John - Career Mentor",
+          "is_organizer": false
+        }
+      ]
+    },
+    {
+      "meeting_id": "study_group_001",
+      "title": "Study Group - Discrete Math Exam Prep",
+      "description": "Final exam in 1 week. Cover: graph theory, combinatorics, proofs. Discuss past exams.",
+      "location": "Library, Study Room 3",
+      "start_time": "2025-11-22T19:00:00Z",
+      "end_time": "2025-11-22T20:30:00Z",
+      "participants": [
+        {
+          "email": "student@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        },
+        {
+          "email": "classmate1@nyu.edu",
+          "name": "Sarah",
+          "is_organizer": false
+        },
+        {
+          "email": "classmate2@nyu.edu",
+          "name": "Mike",
+          "is_organizer": false
+        }
+      ]
+    },
+    {
+      "meeting_id": "club_meeting_001",
+      "title": "AI Club Meeting - Tech Talk by Industry Engineer",
+      "description": "Industry speaker from Google talking about AI at scale. General interest meeting for all club members.",
+      "location": "https://meet.google.com/xyz-uvw-rst",
+      "start_time": "2025-11-23T17:00:00Z",
+      "end_time": "2025-11-23T18:00:00Z",
+      "participants": [
+        {
+          "email": "student@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        },
+        {
+          "email": "club_president@nyu.edu",
+          "name": "Lisa",
+          "is_organizer": true
+        },
+        {
+          "email": "engineer@google.com",
+          "name": "Engineer from Google",
+          "is_organizer": false
+        }
+      ]
+    },
+    {
+      "meeting_id": "assignment_review_001",
+      "title": "Assignment Review - Database Design Project",
+      "description": "Review TA feedback on database schema design. Deadline for resubmission: Nov 27.",
+      "location": "Zoom",
+      "start_time": "2025-11-23T15:00:00Z",
+      "end_time": "2025-11-23T15:30:00Z",
+      "participants": [
+        {
+          "email": "student@nyu.edu",
+          "name": "You",
+          "is_organizer": true
+        },
+        {
+          "email": "ta@nyu.edu",
+          "name": "TA - David",
+          "is_organizer": false
+        }
+      ]
+    }
+  ]
+}
