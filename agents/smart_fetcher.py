@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from openai import OpenAI
 
@@ -7,7 +8,7 @@ class SmartFetcherAgent:
     Agent that decides:
     1. Do we need THEORY from RAG?
     2. Do we need PRACTICE/EXAMPLES from web?
-    3. Or both?
+    3. Or MEETINGS data from meeting.json?
     
     Then fetches from appropriate sources
     """
@@ -18,6 +19,17 @@ class SmartFetcherAgent:
             api_key=os.getenv("OPENROUTER_API_KEY")
         )
         self.model = "anthropic/claude-3-5-sonnet"
+        self.meetings = self._load_meetings()
+    
+    def _load_meetings(self) -> list:
+        """Load all meetings from meeting.json"""
+        try:
+            with open('meeting.json', 'r') as f:
+                data = json.load(f)
+                return data.get('meetings', [])
+        except Exception as e:
+            print(f"Error loading meetings: {e}")
+            return []
     
     def decide_what_to_fetch(self, query: str, meeting: dict) -> dict:
         """Agent decides: theory? practice? both?"""
@@ -52,6 +64,11 @@ Respond JSON:
         # Step 2: Fetch from appropriate sources
         content = {}
         
+        # Check if query is asking about meetings
+        meetings_content = self._fetch_from_meetings(query)
+        if meetings_content:
+            content["meetings"] = meetings_content
+        
         # if fetch_type in ["theory", "both"]:
             # Fetch from Person 3 RAG
         rag_content = self._fetch_from_rag(query)
@@ -63,6 +80,54 @@ Respond JSON:
         content["web"] = web_content
         
         return content
+    
+    def _fetch_from_meetings(self, query: str) -> str:
+        """Search meeting.json for relevant meetings"""
+        if not self.meetings:
+            return ""
+        
+        # Keywords that indicate meeting-related queries
+        meeting_keywords = ['meeting', 'upcoming', 'schedule', 'calendar', 'events', 'next', 'attend', 'class', 'office hours']
+        query_lower = query.lower()
+        
+        is_meeting_query = any(kw in query_lower for kw in meeting_keywords)
+        
+        if not is_meeting_query:
+            return ""
+        
+        # Build list of meetings with timestamps for sorting
+        from datetime import datetime
+        
+        try:
+            meetings_with_time = [
+                (meeting, datetime.fromisoformat(meeting['start_time'].replace('Z', '+00:00')))
+                for meeting in self.meetings
+            ]
+            # Sort by start time
+            meetings_with_time.sort(key=lambda x: x[1])
+        except Exception as e:
+            print(f"Error parsing meeting times: {e}")
+            meetings_with_time = [(m, None) for m in self.meetings]
+        
+        # Extract count if user asked for "next N"
+        import re
+        match = re.search(r'next\s+(\d+)', query_lower)
+        count = int(match.group(1)) if match else 3  # Default to next 3
+        
+        # Get upcoming meetings
+        upcoming = meetings_with_time[:count]
+        
+        meetings_text = "UPCOMING MEETINGS:\n"
+        for meeting, _ in upcoming:
+            meetings_text += f"""
+- Title: {meeting['title']}
+  Date/Time: {meeting['start_time']}
+  Location: {meeting['location']}
+  Description: {meeting['description']}
+  Participants: {', '.join([p['name'] for p in meeting.get('participants', [])])}
+"""
+        
+        return meetings_text
     
     def _fetch_from_rag(self, query: str) -> str:
         # """

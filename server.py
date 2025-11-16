@@ -176,7 +176,7 @@ async def generate_audio_with_elevenlabs(text: str) -> Optional[str]:
 # ============================================================================
 
 def _generate_summary(query: str, content: dict) -> dict:
-    """Generate summaries of RAG and Web content"""
+    """Generate summaries of RAG, Web, and Meetings content"""
     summaries = {}
     
     if content.get("rag"):
@@ -211,12 +211,17 @@ Summarize in 1-2 sentences for query: "{query}" """
             print(f"Error summarizing web: {e}")
             summaries["web"] = content.get("web", "")
     
+    # Pass meetings data through without summarizing (already formatted)
+    if content.get("meetings"):
+        summaries["meetings"] = content.get("meetings", "")
+    
     return summaries
 
 def _synthesize_answer(query: str, summary: dict, meeting: dict) -> str:
     """Generate final chat response"""
     rag_part = f"From course materials: {summary.get('rag', '')}" if summary.get('rag') else ""
     web_part = f"From research: {summary.get('web', '')}" if summary.get('web') else ""
+    meetings_part = f"\n\nSTUDENT'S CALENDAR:\n{summary.get('meetings', '')}" if summary.get('meetings') else ""
     
     prompt = f"""Meeting: {meeting.get('title', 'Unknown')}, {meeting.get('description', '')}
 Meeting time: {meeting.get('start_time', 'N/A')}, Location: {meeting.get('location', 'N/A')}
@@ -226,12 +231,13 @@ Student Question: "{query}"
 {rag_part}
 
 {web_part}
+{meetings_part}
 
 ---
 
 Write a helpful, coherent chat response that:
 1. Directly answers the student's question
-2. Combines both sources naturally
+2. Combines all available sources naturally
 3. Is conversational (2-3 paragraphs)
 4. Explains concepts clearly"""
     
@@ -402,18 +408,25 @@ async def prep_meeting(request: Request):
     
     data = await request.json()
     
-    # Determine meeting data
+    # Determine meeting data and keep full meetings list accessible
     if data.get('meetings') and 'mock_index' in data:
-        meeting_data = MOCK_MEETINGS[data['mock_index']]
+        meeting_data = MOCK_MEETINGS[data.get('mock_index', 0)]
+        meetings_list = MOCK_MEETINGS
     else:
         meeting_data = data.get('meeting_data', {})
-    
+        # Normalize to list: if user provided array, use it, otherwise wrap single meeting
+        if isinstance(data.get('meeting_data'), list):
+            meetings_list = data.get('meeting_data')
+        else:
+            meetings_list = [meeting_data]
+
     # Create meeting session ID
     meeting_session_id = f"meeting_{secrets.token_hex(8)}"
-    
-    # Store meeting in user session
+
+    # Store meeting in user session (include full list under all_meetings)
     user_session['meetings'][meeting_session_id] = {
         "data": meeting_data,
+        "all_meetings": meetings_list,
         "created_at": datetime.now().isoformat()
     }
     user_session['conversation_history'][meeting_session_id] = []
@@ -422,7 +435,8 @@ async def prep_meeting(request: Request):
         "session_id": session_id,
         "meeting_session_id": meeting_session_id,
         "status": "ready",
-        "meeting": meeting_data
+        "meeting": meeting_data,
+        "all_meetings": meetings_list
     }
 
 @app.post("/api/chat")

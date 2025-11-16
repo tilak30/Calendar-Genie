@@ -212,8 +212,18 @@ async function handleSend(text) {
 
     // Play audio or speak
     if (audio_url) {
-      await playAudio(audio_url);
+      console.log('📌 Playing audio from URL');
+      try {
+        await playAudio(audio_url);
+      } catch (audioErr) {
+        console.warn('Audio playback error, using fallback speech synthesis:', audioErr);
+        console.log('Calling speakTextFallback due to audio error');
+        speakTextFallback(answer || responseText);
+      }
     } else {
+      // No audio URL, use fallback
+      console.log('📌 No audio_url, using speech synthesis fallback');
+      console.log('About to call speakTextFallback with:', (answer || responseText).substring(0, 50) + '...');
       speakTextFallback(answer || responseText);
     }
 
@@ -243,7 +253,6 @@ async function playAudio(url) {
 /**
  * Speak text using Web Speech API (fallback only if audio_url fails)
  * @param {string} text - Text to speak
- * @deprecated ElevenLabs audio is now the primary method
  */
 function speakTextFallback(text) {
   if ('speechSynthesis' in window) {
@@ -282,9 +291,17 @@ function setupSpeechRecognition() {
   };
 
   recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    input.value = transcript;
-    handleSend(transcript);
+    // Only process final results, not interim ones
+    const isFinal = event.results[event.results.length - 1].isFinal;
+    const transcript = event.results[event.results.length - 1][0].transcript;
+    
+    if (isFinal) {
+      input.value = transcript;
+      handleSend(transcript);
+    } else {
+      // Show interim transcript in input for user feedback
+      input.value = transcript;
+    }
   };
 
   recognition.onerror = (event) => {

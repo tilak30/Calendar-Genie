@@ -11,6 +11,17 @@ class ConversationAnalysisAgent:
             api_key=os.getenv("OPENROUTER_API_KEY")
         )
         self.model = "anthropic/claude-3-5-sonnet"
+        self.meetings = self._load_meetings()
+    
+    def _load_meetings(self) -> list:
+        """Load all meetings from meeting.json"""
+        try:
+            with open('meeting.json', 'r') as f:
+                data = json.load(f)
+                return data.get('meetings', [])
+        except Exception as e:
+            print(f"Error loading meetings: {e}")
+            return []
     
     def analyze_and_decide(self, 
                           query: str,
@@ -28,12 +39,25 @@ class ConversationAnalysisAgent:
         else:
             history_text = "No previous conversation yet"
         
+        # Check if query is about meetings
+        meeting_keywords = ['meeting', 'upcoming', 'schedule', 'calendar', 'events', 'next', 'attend', 'class', 'office hours']
+        query_lower = query.lower()
+        is_meeting_query = any(kw in query_lower for kw in meeting_keywords)
+        
+        # Build prompt with meetings context if relevant
+        meetings_context = ""
+        if is_meeting_query and self.meetings:
+            meetings_context = "\n\nAVAILABLE MEETINGS (from meeting.json):\n"
+            for m in self.meetings[:5]:
+                meetings_context += f"- {m['title']} ({m['start_time']})\n"
+        
         # Build prompt
         prompt = f"""You are an intelligent meeting prep agent helping a student.
 
 MEETING:
 Title: {meeting_data['title']}
 Description: {meeting_data['description']}
+{meetings_context}
 
 CONVERSATION HISTORY:
 {history_text}
@@ -43,16 +67,17 @@ NEW QUESTION:
 
 ---
 
-DECIDE: drive|web|hybrid|history?
+DECIDE: drive|web|hybrid|meetings|history?
 
 - DRIVE: Internal (course notes, meeting materials)
 - WEB: External (tutorials, research, general info)
 - HYBRID: Both internal and external
+- MEETINGS: Student's calendar/schedule data
 - HISTORY: Reference previous discussion
 
 Respond ONLY with valid JSON:
 {{
-    "decision": "drive|web|hybrid|history",
+    "decision": "drive|web|hybrid|meetings|history",
     "reasoning": "Why this decision (1-2 sentences)",
     "confidence": 0.0-1.0,
     "student_intent": "What the student is trying to do"
@@ -73,7 +98,7 @@ Respond ONLY with valid JSON:
             decision = json.loads(message)
             
             # Validate
-            if decision.get("decision") not in ["drive", "web", "hybrid", "history"]:
+            if decision.get("decision") not in ["drive", "web", "hybrid", "meetings", "history"]:
                 decision["decision"] = "hybrid"
             
             return decision

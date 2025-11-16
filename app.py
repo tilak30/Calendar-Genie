@@ -35,17 +35,25 @@ def prep_meeting():
     data = request.json
     session_id = f"session_{uuid.uuid4().hex[:8]}"
     
+    # Support mock meetings (many) or a single/array meeting payload
     if 'meetings' in data:
-        meeting_data = MOCK_MEETINGS[data['mock_index']]
+        meeting_data = MOCK_MEETINGS[data.get('mock_index', 0)]
+        all_meetings = MOCK_MEETINGS
     else:
-        meeting_data = data
-    
+        # Accept either a single meeting object or an array of meetings
+        if isinstance(data, list):
+            all_meetings = data
+            meeting_data = data[0] if len(data) > 0 else {}
+        else:
+            meeting_data = data.get('meeting_data', data)
+            # normalize all_meetings to a list
+            all_meetings = meeting_data if isinstance(meeting_data, list) else [meeting_data]
+
     sessions[session_id] = {
         "meeting_data": meeting_data,
         "conversation_history": [],
-        "all_meetings": meeting_data,
+        "all_meetings": all_meetings,
         "current_time": datetime.now().isoformat()
-        
     }
     # meeting_data = meeting_data[:5] if meeting_data else {}
 
@@ -53,7 +61,8 @@ def prep_meeting():
     return jsonify({
         "session_id": session_id,
         "status": "ready",
-        "meeting": meeting_data
+        "meeting": meeting_data,
+        "all_meetings": all_meetings
     }), 200
 
 @app.route('/api/chat', methods=['POST'])
