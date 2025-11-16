@@ -24,10 +24,83 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 
+import logging
+import time
+from threading import Thread
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+from llama_index.core import (
+    SimpleDirectoryReader,
+    VectorStoreIndex,
+    StorageContext,
+    load_index_from_storage,
+)
+from llama_index.core.settings import Settings
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+# RAG index directories and embedding model
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+INDEX_DIR = "./index_storage"
+DOCS_DIR = "./local_files"
+
+logging.info("Loading embedding model for RAG (may download)...")
+embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+
+
+class SearchRequest(BaseModel):
+    meeting_name: str
+    meeting_description: Optional[str] = None
+
+
+def build_or_rebuild_index():
+    if not os.path.exists(DOCS_DIR):
+        os.makedirs(DOCS_DIR)
+
+    logging.info("Starting to build or rebuild index...")
+    documents = SimpleDirectoryReader(DOCS_DIR).load_data()
+
+    if not documents:
+        logging.warning("No documents found in 'local_files'. The index will be empty.")
+        index = VectorStoreIndex.from_documents([], embed_model=embed_model)
+    else:
+        logging.info(f"Found {len(documents)} document(s). Indexing...")
+        node_parser = SentenceSplitter(chunk_size=256, chunk_overlap=20)
+        Settings.embed_model = embed_model
+        Settings.node_parser = node_parser
+        index = VectorStoreIndex.from_documents(documents)
+
+    index.storage_context.persist(persist_dir=INDEX_DIR)
+    logging.info(f"✅ Index has been successfully built and saved to '{INDEX_DIR}'.")
+
+
+class NewFileHandler(FileSystemEventHandler):
+    def on_created(self, event):
+        if not event.is_directory:
+            logging.info(f"✅ New file detected: {event.src_path}. Triggering index rebuild.")
+            time.sleep(1)
+            build_or_rebuild_index()
+
+
+def start_file_monitor():
+    event_handler = NewFileHandler()
+    observer = Observer()
+    observer.schedule(event_handler, DOCS_DIR, recursive=True)
+    observer.start()
+    logging.info(f"👀 Watching for new files in '{DOCS_DIR}'...")
+    try:
+        while True:
+            time.sleep(60)
+    except Exception:
+        observer.stop()
+        logging.info("File watcher stopped.")
+    observer.join()
 
 # Initialize FastAPI app
 app = FastAPI(title="Calendar-Genie Backend")
@@ -80,7 +153,10 @@ from openai import OpenAI
 
 # Initialize agents
 decision_agent = ConversationAnalysisAgent()
-fetcher_agent = SmartFetcherAgent()
+# Pass RAG server url from env (or default) into the SmartFetcher so it's
+# deterministic and easy to configure from the process environment.
+RAG_SERVER_URL = os.getenv("RAG_SERVER_URL", "http://127.0.0.1:5002")
+fetcher_agent = SmartFetcherAgent(rag_server_url=RAG_SERVER_URL)
 
 # Synthesizer client
 synthesizer_client = OpenAI(
@@ -438,6 +514,72 @@ async def prep_meeting(request: Request):
         "meeting": meeting_data,
         "all_meetings": meetings_list
     }
+
+
+# --- RAG endpoints (formerly in main.py) ---
+@app.on_event("startup")
+def rag_startup():
+    # Build index at startup and start file monitor in background
+    try:
+        build_or_rebuild_index()
+    except Exception as e:
+        logging.error(f"Error building index on startup: {e}")
+
+    monitor_thread = Thread(target=start_file_monitor, daemon=True)
+    monitor_thread.start()
+
+
+@app.post("/api/search")
+async def search_local_context(request: SearchRequest):
+    try:
+        search_query = request.meeting_name
+        if request.meeting_description:
+            search_query += f" - {request.meeting_description}"
+
+        logging.info(f"Loading index for query: '{search_query}'")
+        storage_context = StorageContext.from_defaults(persist_dir=INDEX_DIR)
+        Settings.embed_model = embed_model
+        index = load_index_from_storage(storage_context)
+
+        retriever = index.as_retriever(similarity_top_k=3)
+        retrieved_nodes = retriever.retrieve(search_query)
+
+        SIMILARITY_THRESHOLD = 0.7
+        if not retrieved_nodes or retrieved_nodes[0].score < SIMILARITY_THRESHOLD:
+            logging.warning("No relevant context found in local files for the query.")
+            return {
+                "query": search_query,
+                "answer": "",
+                "source": "local_rag_empty"
+            }
+
+        context_for_llm = "\n\n---\n\n".join([node.get_content() for node in retrieved_nodes])
+        source_files = sorted(list({node.metadata.get('file_name', 'Unknown') for node in retrieved_nodes}))
+        logging.info(f"Found relevant context from chunks in files: {source_files}")
+
+        return {
+            "query": search_query,
+            "answer": context_for_llm,
+            "source": "local_rag_success",
+            "source_files": source_files
+        }
+
+    except FileNotFoundError:
+        logging.error(f"Index directory '{INDEX_DIR}' not found. Please restart the server.")
+        raise HTTPException(status_code=500, detail="Index not found. Please ensure the server has started correctly.")
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/search")
+async def search_local_context_get():
+    return {"detail": "Use POST /api/search with JSON body: {\n  \"meeting_name\": \"...\",\n  \"meeting_description\": \"optional\"\n}\n"}
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    return JSONResponse(status_code=204, content=None)
 
 @app.post("/api/chat")
 async def chat(request: Request):

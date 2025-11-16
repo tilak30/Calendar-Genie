@@ -1,0 +1,11 @@
+Meeting Notes: Project Alpha Kick-off
+
+Date: 2025-11-15
+Attendees: Charlie, Dana
+
+Key Discussion Points:
+- The primary goal of Project Alpha is to refactor the legacy payment processing module.
+- The deadline for the first milestone (code refactor complete) is December 20th, 2025.
+- Dana is assigned as the lead engineer for this project.
+- The project budget is set at $50,000.
+- We will use Python and the FastAPI framework for the new service.
