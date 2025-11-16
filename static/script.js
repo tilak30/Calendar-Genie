@@ -255,11 +255,24 @@ async function playAudio(url) {
  * @param {string} text - Text to speak
  */
 function speakTextFallback(text) {
+  console.log('🔄 speakTextFallback() called');
+  
   if ('speechSynthesis' in window) {
+    console.log('✅ speechSynthesis is available');
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1;
+    
+    // Add event listeners
+    utterance.onstart = () => console.log('🔊 Speech STARTED');
+    utterance.onend = () => console.log('✅ Speech ENDED');
+    utterance.onerror = (e) => console.error('❌ Speech ERROR:', e.error);
+    
     window.speechSynthesis.cancel();
+    console.log('About to call speechSynthesis.speak()');
     window.speechSynthesis.speak(utterance);
+    console.log('speak() called');
+  } else {
+    console.error('❌ speechSynthesis NOT available in this browser');
   }
 }
 
