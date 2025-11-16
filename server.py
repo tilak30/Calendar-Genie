@@ -80,11 +80,13 @@ MOCK_MEETINGS = _load_mock_meetings()
 # ============================================================================
 from agents.conversation_agent import ConversationAnalysisAgent
 from agents.smart_fetcher import SmartFetcherAgent
+from agents.scheduler_agent import SchedulerAgent
 from openai import OpenAI
 
 # Initialize agents
 decision_agent = ConversationAnalysisAgent()
 fetcher_agent = SmartFetcherAgent()
+scheduler_agent = SchedulerAgent()
 
 # Synthesizer client
 synthesizer_client = OpenAI(
@@ -564,10 +566,12 @@ async def chat(request: Request):
     
     Flow:
     1. Receive query
-    2. Fetch from RAG + Web
-    3. Synthesize answer with LLM
-    4. Generate audio
-    5. Store in history
+    2. Check if it's a scheduling request (SchedulerAgent)
+    3. If scheduling: handle via scheduler agent
+    4. Else: fetch from RAG + Web + Meetings
+    5. Synthesize answer with LLM
+    6. Generate audio
+    7. Store in history
     """
     session_id = request.cookies.get("session_id")
     if not session_id:
@@ -589,8 +593,111 @@ async def chat(request: Request):
     
     meeting_data = user_session['meetings'][meeting_session_id]['data']
     history = user_session['conversation_history'][meeting_session_id]
+    all_meetings = user_session['meetings'][meeting_session_id].get('all_meetings', [])
     
-    # ─── STEP 1: Fetch content ───
+    # ─── CHECK FOR SCHEDULING INTENT ───
+    # Handle follow-ups first (e.g., replacement flow)
+    followup = scheduler_agent.process_followup(query, {
+        "current_meeting": meeting_data,
+        "user": user_session.get("user", {})
+    }) if hasattr(scheduler_agent, 'process_followup') else None
+    if followup:
+        history.append({
+            "query": query,
+            "answer": followup.get("message", ""),
+            "decision": "scheduling",
+            "timestamp": datetime.now().isoformat()
+        })
+        return {
+            "session_id": session_id,
+            "meeting_session_id": meeting_session_id,
+            "query": query,
+            "answer": followup.get("message", ""),
+            "text": followup.get("message", ""),
+            "audio_url": await generate_audio_with_elevenlabs(followup.get("message", "")),
+            "sources": {"rag": "", "web": "", "meetings": ""},
+            "meetings_structured": [],
+            "decision": "scheduling",
+            "reasoning": "Handling schedule follow-up",
+            "source": "scheduler_agent",
+            "scheduler_action": followup.get("action"),
+            "scheduler_details": followup.get("details"),
+            "needs_confirmation": followup.get("needs_confirmation", False),
+            "agent_trace": followup.get("trace")
+        }
+
+    # First check if user is confirming a pending schedule
+    if scheduler_agent.pending_confirmation:
+        result = scheduler_agent.confirm_and_schedule(query)
+        if result["action"] in ["scheduled", "cancelled"]:
+            # Store in history
+            history.append({
+                "query": query,
+                "answer": result["message"],
+                "decision": "scheduling",
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            # Reload meetings if successfully scheduled
+            if result["action"] == "scheduled":
+                try:
+                    with open('meeting.json', 'r') as f:
+                        updated_meetings = json.load(f).get('meetings', [])
+                        user_session['meetings'][meeting_session_id]['all_meetings'] = updated_meetings
+                except Exception:
+                    pass
+            
+            return {
+                "session_id": session_id,
+                "meeting_session_id": meeting_session_id,
+                "query": query,
+                "answer": result["message"],
+                "text": result["message"],
+                "audio_url": await generate_audio_with_elevenlabs(result["message"]),
+                "sources": {"rag": "", "web": "", "meetings": ""},
+                "meetings_structured": [],
+                "decision": "scheduling",
+                "reasoning": "Confirming scheduled meeting",
+                "source": "scheduler_agent",
+                "scheduler_action": result["action"],
+                "agent_trace": result.get("trace")
+            }
+    
+    # Check if this is a new scheduling request
+    scheduling_result = scheduler_agent.handle_scheduling_request(query, {
+        "current_meeting": meeting_data,
+        "user": user_session.get("user", {})
+    })
+    
+    if scheduling_result["action"] != "not_scheduling":
+        # This is a scheduling request
+        history.append({
+            "query": query,
+            "answer": scheduling_result["message"],
+            "decision": "scheduling",
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        return {
+            "session_id": session_id,
+            "meeting_session_id": meeting_session_id,
+            "query": query,
+            "answer": scheduling_result["message"],
+            "text": scheduling_result["message"],
+            "audio_url": await generate_audio_with_elevenlabs(scheduling_result["message"]),
+            "sources": {"rag": "", "web": "", "meetings": ""},
+            "meetings_structured": [],
+            "decision": "scheduling",
+            "reasoning": "Handling schedule request",
+            "source": "scheduler_agent",
+            "scheduler_action": scheduling_result["action"],
+            "scheduler_details": scheduling_result.get("details"),
+            "needs_confirmation": scheduling_result.get("needs_confirmation", False),
+            "agent_trace": scheduling_result.get("trace")
+        }
+    
+    # ─── NORMAL CHAT FLOW (not scheduling) ───
+    # STEP 1: Fetch content ───
     content = fetcher_agent.fetch_all(query, meeting_data)
     
     # ─── STEP 2: Get decision ───
@@ -600,7 +707,6 @@ async def chat(request: Request):
     summary = _generate_summary(query, content)
     
     # ─── STEP 4: Synthesize answer (include history for context) ───
-    all_meetings = user_session['meetings'][meeting_session_id].get('all_meetings', [])
     final_answer = _synthesize_answer(query, summary, meeting_data, history, all_meetings)
     
     # ─── STEP 5: Generate audio ───
@@ -630,7 +736,8 @@ async def chat(request: Request):
         "meetings_structured": content.get("meetings_structured", []),
         "decision": decision.get('decision'),
         "reasoning": decision.get('reasoning'),
-        "source": "private_docs"
+        "source": "private_docs",
+        "agent_trace": fetcher_agent.get_execution_summary() if hasattr(fetcher_agent, 'get_execution_summary') else None
     }
 
 @app.get("/health")

@@ -2,115 +2,214 @@
   "meetings": [
     {
       "meeting_id": "meeting_algorithms_strategy",
-      "title": "Algorithms – Project Strategy Discussion",
+      "title": "Algorithms \u2013 Project Strategy Discussion",
       "description": "Divide & Conquer vs DP discussion.",
       "location": "Room 400",
       "start_time": "2025-11-14T09:00:00Z",
       "end_time": "2025-11-14T10:00:00Z",
       "participants": [
-        { "email": "prof_dana@nyu.edu", "name": "Prof. Dana", "is_organizer": true },
-        { "email": "class@nyu.edu", "name": "Class", "is_organizer": false }
+        {
+          "email": "prof_dana@nyu.edu",
+          "name": "Prof. Dana",
+          "is_organizer": true
+        },
+        {
+          "email": "class@nyu.edu",
+          "name": "Class",
+          "is_organizer": false
+        },
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        }
       ]
     },
     {
       "meeting_id": "meeting_cloudcomputing_debug",
-      "title": "Cloud Computing – Deployment Debugging",
+      "title": "Cloud Computing \u2013 Deployment Debugging",
       "description": "K8s deployment crash investigation.",
       "location": "Room 310",
       "start_time": "2025-11-14T10:00:00Z",
       "end_time": "2025-11-14T11:00:00Z",
       "participants": [
-        { "email": "prof_adams@nyu.edu", "name": "Prof. Adams", "is_organizer": true },
-        { "email": "team@nyu.edu", "name": "Team", "is_organizer": false }
+        {
+          "email": "prof_adams@nyu.edu",
+          "name": "Prof. Adams",
+          "is_organizer": true
+        },
+        {
+          "email": "team@nyu.edu",
+          "name": "Team",
+          "is_organizer": false
+        },
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        }
       ]
     },
     {
       "meeting_id": "meeting_databases_txn",
-      "title": "Databases – Transaction Systems",
+      "title": "Databases \u2013 Transaction Systems",
       "description": "ACID & isolation anomalies.",
       "location": "Room 221",
       "start_time": "2025-11-14T11:00:00Z",
       "end_time": "2025-11-14T12:00:00Z",
       "participants": [
-        { "email": "prof_helena@nyu.edu", "name": "Prof. Helena", "is_organizer": true },
-        { "email": "class@nyu.edu", "name": "Class", "is_organizer": false }
+        {
+          "email": "prof_helena@nyu.edu",
+          "name": "Prof. Helena",
+          "is_organizer": true
+        },
+        {
+          "email": "class@nyu.edu",
+          "name": "Class",
+          "is_organizer": false
+        },
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        }
       ]
     },
     {
       "meeting_id": "meeting_bigdata_yesterday",
-      "title": "Big Data – Hadoop Job Review",
+      "title": "Big Data \u2013 Hadoop Job Review",
       "description": "Debugging MapReduce reducer.",
       "location": "Room 120",
       "start_time": "2025-11-14T13:00:00Z",
       "end_time": "2025-11-14T14:00:00Z",
       "participants": [
-        { "email": "you@nyu.edu", "name": "You", "is_organizer": false },
-        { "email": "prof_lee@nyu.edu", "name": "Prof. Lee", "is_organizer": true }
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        },
+        {
+          "email": "prof_lee@nyu.edu",
+          "name": "Prof. Lee",
+          "is_organizer": true
+        }
       ]
     },
-
     {
       "meeting_id": "meeting_architecture_planning",
-      "title": "Project Alpha – Architecture Planning Session",
+      "title": "Project Alpha \u2013 Architecture Planning Session",
       "description": "Architecture review for payment module refactor.",
-      "location": "Engineering HQ – Room 22",
+      "location": "Engineering HQ \u2013 Room 22",
       "start_time": "2025-11-15T09:00:00Z",
       "end_time": "2025-11-15T10:00:00Z",
       "participants": [
-        { "email": "charlie@company.com", "name": "Charlie", "is_organizer": true },
-        { "email": "dana@company.com", "name": "Dana", "is_organizer": false },
-        { "email": "ravi@company.com", "name": "Ravi", "is_organizer": false }
+        {
+          "email": "charlie@company.com",
+          "name": "Charlie",
+          "is_organizer": true
+        },
+        {
+          "email": "dana@company.com",
+          "name": "Dana",
+          "is_organizer": false
+        },
+        {
+          "email": "ravi@company.com",
+          "name": "Ravi",
+          "is_organizer": false
+        },
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        }
       ]
     },
     {
       "meeting_id": "meeting_datastructures_review",
-      "title": "Data Structures – Review Session",
+      "title": "Data Structures \u2013 Review Session",
       "description": "AVL trees & rotation walkthrough.",
       "location": "Room 301",
       "start_time": "2025-11-15T12:00:00Z",
       "end_time": "2025-11-15T13:00:00Z",
       "participants": [
-        { "email": "you@nyu.edu", "name": "You", "is_organizer": false },
-        { "email": "prof_smith@nyu.edu", "name": "Prof. Smith", "is_organizer": true }
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        },
+        {
+          "email": "prof_smith@nyu.edu",
+          "name": "Prof. Smith",
+          "is_organizer": true
+        }
       ]
     },
     {
       "meeting_id": "meeting_network_security_labprep",
-      "title": "Network Security – Lab 3 Prep",
+      "title": "Network Security \u2013 Lab 3 Prep",
       "description": "Preparation for MITM + ARP spoofing lab.",
       "location": "Tech Center - Room 112",
       "start_time": "2025-11-15T15:00:00Z",
       "end_time": "2025-11-15T16:00:00Z",
       "participants": [
-        { "email": "prof_singh@nyu.edu", "name": "Prof. Singh", "is_organizer": true },
-        { "email": "ta_team@nyu.edu", "name": "TA Team", "is_organizer": false }
+        {
+          "email": "prof_singh@nyu.edu",
+          "name": "Prof. Singh",
+          "is_organizer": true
+        },
+        {
+          "email": "ta_team@nyu.edu",
+          "name": "TA Team",
+          "is_organizer": false
+        },
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        }
       ]
     },
     {
       "meeting_id": "meeting_infovis_project",
-      "title": "Information Visualization – Final Project Checkpoint",
+      "title": "Information Visualization \u2013 Final Project Checkpoint",
       "description": "Project 3 review & accessibility updates.",
       "location": "Room 204",
       "start_time": "2025-11-15T17:00:00Z",
       "end_time": "2025-11-15T17:30:00Z",
       "participants": [
-        { "email": "you@nyu.edu", "name": "You", "is_organizer": true },
-        { "email": "prof_sarah@nyu.edu", "name": "Prof. Sarah", "is_organizer": false }
+        {
+          "email": "prof_sarah@nyu.edu",
+          "name": "Prof. Sarah",
+          "is_organizer": false
+        },
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": true
+        }
       ]
     },
     {
       "meeting_id": "meeting_mlengineering_pipeline",
-      "title": "ML Engineering – Deployment Pipeline",
+      "title": "ML Engineering \u2013 Deployment Pipeline",
       "description": "CI/CD and model monitoring planning.",
       "location": "Tech Center",
       "start_time": "2025-11-15T18:00:00Z",
       "end_time": "2025-11-15T19:00:00Z",
       "participants": [
-        { "email": "you@nyu.edu", "name": "You", "is_organizer": false },
-        { "email": "prof_harris@nyu.edu", "name": "Prof. Harris", "is_organizer": true }
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        },
+        {
+          "email": "prof_harris@nyu.edu",
+          "name": "Prof. Harris",
+          "is_organizer": true
+        }
       ]
     },
-
     {
       "meeting_id": "class_001",
       "title": "Advanced Data Structures - Lecture",
@@ -119,8 +218,21 @@
       "start_time": "2025-11-20T10:00:00Z",
       "end_time": "2025-11-20T11:30:00Z",
       "participants": [
-        { "email": "student@nyu.edu", "name": "You", "is_organizer": false },
-        { "email": "prof_smith@nyu.edu", "name": "Prof. Smith", "is_organizer": true }
+        {
+          "email": "student@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        },
+        {
+          "email": "prof_smith@nyu.edu",
+          "name": "Prof. Smith",
+          "is_organizer": true
+        },
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        }
       ]
     },
     {
@@ -131,11 +243,23 @@
       "start_time": "2025-11-20T14:00:00Z",
       "end_time": "2025-11-20T14:30:00Z",
       "participants": [
-        { "email": "student@nyu.edu", "name": "You", "is_organizer": true },
-        { "email": "prof_smith@nyu.edu", "name": "Prof. Smith", "is_organizer": false }
+        {
+          "email": "student@nyu.edu",
+          "name": "You",
+          "is_organizer": true
+        },
+        {
+          "email": "prof_smith@nyu.edu",
+          "name": "Prof. Smith",
+          "is_organizer": false
+        },
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        }
       ]
     },
-
     {
       "meeting_id": "class_002",
       "title": "Machine Learning Fundamentals - Lab",
@@ -144,8 +268,21 @@
       "start_time": "2025-11-21T14:00:00Z",
       "end_time": "2025-11-21T15:30:00Z",
       "participants": [
-        { "email": "student@nyu.edu", "name": "You", "is_organizer": false },
-        { "email": "prof_ml@nyu.edu", "name": "Prof. Chen", "is_organizer": true }
+        {
+          "email": "student@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        },
+        {
+          "email": "prof_ml@nyu.edu",
+          "name": "Prof. Chen",
+          "is_organizer": true
+        },
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": false
+        }
       ]
     },
     {
@@ -156,10 +293,63 @@
       "start_time": "2025-11-21T18:00:00Z",
       "end_time": "2025-11-21T19:00:00Z",
       "participants": [
-        { "email": "student@nyu.edu", "name": "You", "is_organizer": true },
-        { "email": "teammate1@nyu.edu", "name": "Alice", "is_organizer": false },
-        { "email": "teammate2@nyu.edu", "name": "Bob", "is_organizer": false },
-        { "email": "teammate3@nyu.edu", "name": "Charlie", "is_organizer": false }
+        {
+          "email": "student@nyu.edu",
+          "name": "You",
+          "is_organizer": true
+        },
+        {
+          "email": "teammate1@nyu.edu",
+          "name": "Alice",
+          "is_organizer": false
+        },
+        {
+          "email": "teammate2@nyu.edu",
+          "name": "Bob",
+          "is_organizer": false
+        },
+        {
+          "email": "teammate3@nyu.edu",
+          "name": "Charlie",
+          "is_organizer": false
+        },
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": true
+        }
+      ]
+    },
+    {
+      "complete": true,
+      "meeting_id": "meeting_stub_20251119T090000Z",
+      "title": "Team standup",
+      "description": "Stubbed details",
+      "location": "Room 201",
+      "start_time": "2025-11-19T09:00:00Z",
+      "end_time": "2025-11-19T09:30:00Z",
+      "participants": [
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": true
+        }
+      ]
+    },
+    {
+      "complete": true,
+      "meeting_id": "meeting_stub_20251119T080000Z",
+      "title": "New Meeting",
+      "description": "Stubbed details",
+      "location": "TBD",
+      "start_time": "2025-11-19T08:00:00Z",
+      "end_time": "2025-11-19T09:00:00Z",
+      "participants": [
+        {
+          "email": "you@nyu.edu",
+          "name": "You",
+          "is_organizer": true
+        }
       ]
     }
   ]

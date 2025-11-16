@@ -1,284 +1,110 @@
-# Calendar-Genie
 # 🧞 Calendar-Genie
+Calendar-Genie is an AI-powered meeting preparation and chat assistant that combines local meeting data, a local RAG corpus, and LLM reasoning to answer questions, prepare meeting summaries, and schedule meetings via a conversational interface.
+**Quick links**
+- Server: `server.py`
+- Agents: `agents/` (`smart_fetcher.py`, `scheduler_agent.py`, `conversation_agent.py`, `answer_synthesizer.py`)
+- Meetings data: `meeting.json` (hot-reloadable)
+- RAG docs: `meetings_bundle/`
 
-An intelligent agent that lives in your chat, preparing you for your next meeting by deciding where to find the most relevant information and switching autonomously between your private documents and the public web.
+**Short summary**
+- Hot-reloads `meeting.json` so the LLM always sees the latest meeting state.
+- SmartFetcherAgent implements a ReAct-style retrieval pipeline (Plan → Execute → Reflect) and returns an execution trace for debugging.
+- SchedulerAgent is an agentic, multi-phase scheduler (Analyze → Check → Gather → Confirm → Commit) with conflict detection, organizer-aware messages, and replacement flow support.
+- Primary LLM: OpenRouter (Claude family) when `OPENROUTER_API_KEY` is provided; agents degrade gracefully to heuristics/stubs for offline testing.
+- TTS: ElevenLabs (primary) with a browser Web Speech fallback if ElevenLabs is unavailable.
 
-## 🎯 The Pitch
+**Environment**
+Create a `.env` at repo root with the relevant keys. Minimal for development:
 
-**"Calendar-Genie is an intelligent agent that lives in your chat. It prepares you for your next meeting by not just reading your calendar, but by deciding where to find the most relevant information, switching autonomously between your private documents and the public web."**
+```
+OPENROUTER_API_KEY=your_openrouter_key
+MOCK_AUTH=true
+# Optional for TTS
+ELEVENLABS_API_KEY=your_elevenlabs_key
+ELEVENLABS_VOICE_ID=21m00Tcm4TlvDq8ikWAM
+```
 
-### The Novelty: Dynamic Contextual Grounding
-
-- **Internal Meeting?** 🏢 Pivots to "Private RAG Mode" — reads the full content of your Google Drive docs
-- **External Meeting?** 🌐 Pivots to "Public Search Mode" — uses Google to find public context on the person or company
-- **Smart Switching:** Automatically chooses the best source based on what's available
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Python 3.9+
-- Google account (for OAuth)
-- Modern web browser (Chrome, Edge, Firefox)
-
-### Installation
+Install dependencies:
 
 ```bash
-# Clone the repository
-git clone <repo-url>
-cd Calendar-Genie
-
-# Install dependencies
 python3 -m pip install -r requirements.txt
 ```
 
-### Run in Mock Mode (No Setup Required)
-
-Perfect for testing and development:
+Run server in mock mode (dev):
 
 ```bash
-MOCK_AUTH=true python3 main.py
+export MOCK_AUTH=true
+MOCK_AUTH=true python3 -u server.py 2>&1 | tee /tmp/server.log
 ```
 
-Then open: **http://localhost:8000/index.html**
-
-- Click "Sign in with Google" → Instant demo login
-- Try: Type "Prep me" or click the Record button
-
-### Run with Real Google OAuth
-
-See [GOOGLE_OAUTH_SETUP.md](GOOGLE_OAUTH_SETUP.md) for detailed steps. Quick version:
+Run scheduler tests:
 
 ```bash
-export GOOGLE_CLIENT_ID="your-client-id"
-export GOOGLE_CLIENT_SECRET="your-client-secret"
-python3 main.py
+python3 test_scheduler.py
 ```
 
-## 📋 Architecture
+**Architecture (high level)**
 
-### Three-Tier System
+- Frontend: `index.html` + `static/*` — a minimal SPA providing chat and meeting prep UI.
+- Backend: `server.py` (FastAPI) — session management (mock or real OAuth), chat endpoint, prep endpoints, and orchestration.
+- Agents:
+	- `ConversationAnalysisAgent`: decides intent and what information is needed.
+	- `SmartFetcherAgent`: ReAct retrieval pipeline over `meeting.json` and RAG docs.
+	- `SchedulerAgent`: multi-phase scheduling agent with confirmation and commit.
+- RAG: Vector search via `llama_index` (if available) with HuggingFace embeddings; token-based paragraph scoring fallback if vector index or embeddings are missing.
+- TTS: ElevenLabs API used to return base64 audio URLs; browser Web Speech used as a fallback.
 
-```
-Frontend (Static UI)
-├── Auth Screen (Google OAuth)
-├── Chat UI (Messages + Voice Input)
-├── Voice Input (SpeechRecognition API)
-└── TTS Fallback (Browser Speech Synthesis)
-           ↓
-Backend (FastAPI)
-├── /auth/google (OAuth initiation)
-├── /auth/callback (OAuth handling)
-├── /api/user (Session management)
-└── /api/chat (Main orchestrator)
-           ↓
-External APIs
-├── Google Calendar API
-├── Google Drive API  
-├── Google Custom Search API
-├── OpenRouter (LLM)
-└── ElevenLabs (Audio generation)
-```
+**SmartFetcherAgent (summary)**
 
-## 📁 Project Structure
+- Pattern: ReAct — Planning (LLM-based or heuristic), Execution (meetings + RAG tools), Reflection (quality checks and refinement).
+- Keeps `query_history`, `current_plan`, and `execution_trace` for explainability and tuning.
+- Parameterized retrieval: `_fetch_from_meetings(query, limit=...)`, `_fetch_from_rag(query, top_k=..., threshold=...)` so the agent can adapt retrieval granularity per query.
+- Fallbacks: heuristic planning and lower RAG thresholds when vector/embedding calls fail.
 
-```
-Calendar-Genie/
-├── index.html                    # Frontend entry point
-├── main.py                       # FastAPI backend
-├── requirements.txt              # Python dependencies
-├── static/
-│   ├── auth.js                  # OAuth & session management
-│   ├── script.js                # Chat UI & messaging logic
-│   └── styles.css               # Styling & responsive design
-├── README.md                     # This file
-├── GOOGLE_OAUTH_SETUP.md         # Detailed OAuth setup
-└── SETUP_COMPLETE.md             # Setup checklist
-```
+**SchedulerAgent (summary)**
 
-## 🎮 Features
+- Phases:
+	1. Analyze: detect scheduling intent and extract a time slot.
+	2. Check: conflict detection against `meeting.json` (with organizer-aware messaging).
+	3. Gather: infer missing fields via LLM (title, duration, participants, location) or use sensible defaults.
+	4. Confirm: present a nicely formatted meeting confirmation and store in `pending_confirmation`.
+	5. Commit: on explicit user confirmation, append to `meeting.json` (supports replacement flow when user requests to replace another meeting).
+- Safety: prevents scheduling in past time slots and asks clarifying questions when needed.
 
-### Phase 1: ✅ Authentication
-- [x] Google OAuth sign-in
-- [x] Session management
-- [x] User profile display
-- [x] Mock mode for testing
+**RAG and documents**
 
-### Phase 2: ✅ Frontend UI
-- [x] Chat message interface
-- [x] Text input & Send button
-- [x] Voice input (Record button)
-- [x] Loading indicators
-- [x] Responsive mobile design
+- Documents live in `meetings_bundle/` and are indexed lazily into `index_storage/` when `llama_index` and embeddings are available.
+- If embeddings or llama_index are missing, the system falls back to token-based paragraph scoring and still returns relevant snippets.
 
-### Phase 2.5: ✅ Audio Generation
-- [x] ElevenLabs integration (high-quality TTS)
-- [x] Automatic audio playback
-- [x] Voice selection options
-- [x] Fallback speech synthesis
-- [x] Data URL audio streaming
+**Data: meetings.json**
 
-### Phase 3: 🔄 Backend Tools (In Progress)
-- [ ] Calendar API integration (get next event)
-- [ ] Drive RAG (search & read documents)
-- [ ] Google Search fallback
-- [ ] OpenRouter LLM integration
+- Location: `meeting.json` (hot-reload enabled by `POST /api/reload-meetings` and by running `POST /api/prep-meeting`).
+- Structure: list of meeting objects with `meeting_id`, `title`, `description`, `start_time`, `end_time`, `participants` (with `is_organizer`).
 
-### Phase 4: 🔄 Full Integration (In Progress)
-- [ ] Orchestrator flow (all tools combined)
-- [ ] Meeting prep briefing
-- [ ] Demo & testing
+**Audio generation**
 
-## 🔧 Configuration
+- Primary: ElevenLabs TTS via `ELEVENLABS_API_KEY` (returns base64 data URLs). If ElevenLabs fails (e.g., 401), the frontend falls back to the browser Web Speech API.
 
-### Environment Variables
+**Testing**
 
-**Mock Mode (Default):**
-```bash
-MOCK_AUTH=true python3 main.py
-```
+- `test_scheduler.py` includes offline stubs to test scheduling and replacement flows without live LLM keys.
+- `test_agent.py` exercises SmartFetcher behaviors.
 
-**With ElevenLabs Audio (Recommended):**
-```bash
-export ELEVENLABS_API_KEY="your-api-key-from-elevenlabs.io"
-MOCK_AUTH=true python3 main.py
-```
+**Known issues & next steps**
 
-**Real OAuth:**
-```bash
-export GOOGLE_CLIENT_ID="xxx.apps.googleusercontent.com"
-export GOOGLE_CLIENT_SECRET="GOCSPX-xxx"
-export ELEVENLABS_API_KEY="your-api-key"
-python3 main.py
-```
+- ElevenLabs TTS may return 401 Unauthorized if `ELEVENLABS_API_KEY` is missing/invalid — add a valid key to `.env` to fix.
+- Vector RAG requires the appropriate embedding package (`llama_index.embeddings.huggingface` or similar). If missing, the app falls back to paragraph scoring.
+- Frontend confirmation UI can be improved: server supports `needs_confirmation` and `scheduler_details` for the UI to show confirm/cancel buttons.
 
-**Optional ElevenLabs Configuration:**
-```bash
-export ELEVENLABS_VOICE_ID="21m00Tcm4TlvDq8ikWAM"  # Rachel (default)
-export ELEVENLABS_API_URL="https://api.elevenlabs.io/v1"
-```
+**Contributing**
 
-## 💬 API Endpoints
-
-### Authentication
-- `GET /auth/google` - Initiate OAuth flow
-- `POST /auth/callback` - Handle OAuth callback
-- `POST /auth/logout` - Logout user
-- `GET /api/user` - Get current user info
-
-### Chat
-- `POST /api/chat` - Send message and get response
-  - Request: `{ "text": "user message" }`
-  - Response: `{ "text": "response", "audio_url": "...", "source": "private_docs|public_search" }`
-
-## 🎨 UI/UX
-
-### Color Scheme
-- **Dark Theme**: Modern dark UI with purple accents
-- **Purple Accent**: #7c3aed (Tailwind indigo-600)
-- **Responsive**: Mobile-first design
-
-### User Interface
-- **Auth Screen**: Clean login panel
-- **Chat UI**: Message bubbles with timestamps
-- **Voice Input**: Record button with visual feedback
-- **Loading State**: "Genie is thinking..." indicator
-- **Error Handling**: Friendly error messages
-
-## 🔊 Voice Features
-
-### Speech-to-Text (STT)
-- Uses Web Speech Recognition API
-- Supported: Chrome, Edge, Firefox
-- Auto-submit when done speaking
-
-### Text-to-Speech (TTS)
-- Primary: ElevenLabs API (production)
-- Fallback: Web Speech Synthesis (browser)
-- Auto-play responses
-
-## 📱 Browser Support
-
-| Browser | STT | TTS | Status |
-|---------|-----|-----|--------|
-| Chrome  | ✅  | ✅  | Fully Supported |
-| Edge    | ✅  | ✅  | Fully Supported |
-| Firefox | ✅  | ✅  | Fully Supported |
-| Safari  | ⚠️  | ✅  | Limited STT |
-
-## 🚀 Deployment
-
-### Development
-```bash
-MOCK_AUTH=true python3 main.py
-```
-
-### Production
-1. Get Google OAuth credentials
-2. Set environment variables
-3. Use production-grade WSGI server (Gunicorn, etc)
-4. Enable HTTPS
-5. Update redirect URIs in Google Console
-
-## 📚 Documentation
-
-- **Setup Guide**: See [GOOGLE_OAUTH_SETUP.md](GOOGLE_OAUTH_SETUP.md)
-- **Setup Checklist**: See [SETUP_COMPLETE.md](SETUP_COMPLETE.md)
-
-## 🐛 Troubleshooting
-
-### "Sign in" button doesn't work
-- Check browser console (F12) for errors
-- Verify backend is running: `MOCK_AUTH=true python3 main.py`
-- Hard refresh: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows/Linux)
-
-### "Genie is thinking..." forever
-- Check backend logs for `/api/chat` errors
-- Verify mock mode is enabled
-- Check network tab in DevTools
-
-### Voice input not working
-- Verify browser supports Web Speech Recognition
-- Check microphone permissions in browser settings
-- Try Chrome or Edge (best STT support)
-
-## 📝 Development Notes
-
-### Code Organization
-- **auth.js**: OAuth and session management
-- **script.js**: Chat UI and messaging
-- **main.py**: FastAPI backend and orchestrator
-- **styles.css**: Responsive, dark-theme styling
-
-### Best Practices Implemented
-- JSDoc comments on all functions
-- Error handling throughout
-- Session management with cookies
-- CORS support
-- Responsive mobile design
-- Accessibility considerations
-
-## 🎯 Next Steps
-
-1. **Test Current UI**: Run in mock mode and explore
-2. **Get Google Credentials**: Follow [GOOGLE_OAUTH_SETUP.md](GOOGLE_OAUTH_SETUP.md)
-3. **Integrate Calendar API**: Fetch next event details
-4. **Integrate Drive RAG**: Search and read documents
-5. **Add OpenRouter LLM**: Summarization
-6. **Add ElevenLabs Audio**: High-quality voice
-
-## 📄 License
-
-TBD
-
-## 👥 Contributing
-
-TBD
+If you'd like me to commit this README change, run tests, or restart the server, tell me which action to take and I'll run it.
 
 ---
 
-**Happy Hacking! 🚀**
+Generated/updated on: 2025-11-16
 
-For questions or issues, check the troubleshooting section or review backend logs.
+# 🧞 Calendar-Genie
+
 
 
