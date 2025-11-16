@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Calendar-Genie — Intelligent Meeting Prep</title>
+    <link rel="stylesheet" href="/static/styles.css?v=2">
+  </head>
+  <body>
+    <div id="auth-screen" class="screen">
+      <div class="auth-panel">
+        <h1>🧞 Calendar-Genie</h1>
+        <p class="sub">Intelligent preparation for your next meeting.</p>
+        <button id="google-signin-btn" class="btn-primary">Sign in with Google</button>
+        <p class="note">You need a Google account to continue.</p>
+      </div>
+    </div>
+
+    <div id="app-screen" class="screen hidden">
+      <div class="app">
+        <header>
+          <div>
+            <h1>🧞 Calendar-Genie</h1>
+            <p class="sub" id="user-email"></p>
+          </div>
+          <button id="logout-btn" class="logout-btn">Logout</button>
+        </header>
+
+        <main id="chat-container">
+          <div id="messages" class="messages"></div>
+        </main>
+
+        <form id="chat-form" class="chat-form" autocomplete="off">
+          <button type="button" id="record-btn" title="Record">● Record</button>
+          <input id="input" type="text" placeholder="Ask: 'Prep me'" />
+          <button id="send-btn" type="submit">Send</button>
+        </form>
+      </div>
+    </div>
+
+    <script src="/static/auth.js?v=2"></script>
+    <script src="/static/script.js?v=2"></script>
+  </body>
+</html>
