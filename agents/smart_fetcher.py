@@ -13,7 +13,11 @@ class SmartFetcherAgent:
     Then fetches from appropriate sources
     """
     
-    def __init__(self):
+    def __init__(self, rag_server_url: str | None = None):
+        # Allow explicit injection of the RAG server URL (useful for tests
+        # and to avoid relying on global env side-effects).
+        self.rag_server_url = rag_server_url or os.getenv("RAG_SERVER_URL", "http://localhost:5002")
+
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=os.getenv("OPENROUTER_API_KEY")
@@ -71,7 +75,7 @@ Respond JSON:
         
         # if fetch_type in ["theory", "both"]:
             # Fetch from Person 3 RAG
-        rag_content = self._fetch_from_rag(query)
+        rag_content = self._fetch_from_rag(query, meeting)
         content["rag"] = rag_content
         
         # if fetch_type in ["practice", "both"]:
@@ -129,39 +133,30 @@ Respond JSON:
         
         return meetings_text
     
-    def _fetch_from_rag(self, query: str) -> str:
-        # """
-        # Call Person 3's RAG API
+    def _fetch_from_rag(self, query: str, meeting: dict) -> str:
+        """
+        Call the local RAG API server (main.py).
+        """
+        try:
+            # The RAG server expects meeting_name and meeting_description
+            payload = {
+                "meeting_name": meeting.get("title", query),
+                "meeting_description": meeting.get("description", "")
+            }
+            # Use the instance's configured RAG server URL
+            endpoint = f"{self.rag_server_url.rstrip('/')}/api/search"
+            response = requests.post(endpoint, json=payload, timeout=10)
 
-        # Request:
-        # POST http://localhost:5002/api/rag-query
-        # JSON: {"query": "..."}
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("answer", "")
+            else:
+                print(f"RAG error: {response.status_code} - {response.text}")
+                return ""
 
-        # Response:
-        # {"answer": "...content from documents..."}
-        # """
-        # try:
-        #     response = requests.post(
-        #         "http://localhost:5002/api/rag-query",
-        #         json={"query": query},
-        #         timeout=10
-        #     )
-            
-        #     if response.status_code == 200:
-        #         data = response.json()
-        #         return data.get("answer", "")
-        #     else:
-        #         print(f"RAG error: {response.status_code}")
-        #         return ""
-        
-        # except Exception as e:
-        #     print(f"Error calling RAG: {e}")
-        #     # Fallback hardcoded content for testing
-            return """Binary Search Trees (BST):
-- Left child < Parent < Right child
-- Used for efficient searching (O(log n) average)
-- Self-balancing variants: AVL trees, Red-Black trees
-- Applications: Database indexing, file systems"""
+        except Exception as e:
+            print(f"Error calling RAG server: {e}")
+            return ""
     
     def _fetch_from_web(self, query: str) -> str:
         # """
