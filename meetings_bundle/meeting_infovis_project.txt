@@ -1,0 +1,14 @@
+Meeting Notes: InfoVis – Final Project Checkpoint
+
+Date: 2025-11-15
+Attendees: Prof. Sarah, You
+
+Key Discussion Points:
+- Visualization 3 accepted with minor color tweaks.
+- Need to add annotations & accessibility improvements.
+- Discussed transitions and data mapping consistency.
+
+Action Items:
+- Finish full Observable notebook by Nov 20.
+
+Status: Today – Active

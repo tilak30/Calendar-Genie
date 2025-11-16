@@ -1,0 +1,14 @@
+Meeting Notes: ML Engineering – Deployment Pipeline
+
+Date: 2025-11-15
+Attendees: Prof. Harris, You
+
+Key Discussion Points:
+- Introduced CI/CD for ML models.
+- Monitoring issues: model drift detection pipeline.
+- Next week: FastAPI + ONNX runtime integration.
+
+Action Items:
+- Containerize inference service before Nov 17.
+
+Status: Today – Active

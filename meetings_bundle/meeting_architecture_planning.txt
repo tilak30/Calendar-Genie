@@ -1,0 +1,23 @@
+Meeting Notes: Project Alpha – Architecture Planning Session
+
+Date: 2025-11-15
+Attendees: Charlie, Dana, Ravi
+
+Agenda:
+1. Review architecture layout for refactored payment service.
+2. Identify major modules for FastAPI migration.
+3. Define integration points with legacy billing system.
+4. Establish performance and testing milestones.
+
+Key Discussion Points:
+- Decision to split the payment module into: routing, validation, processors, and billing adapters.
+- Need for a shared utilities library for logging, retries, and metrics.
+- Proposal to introduce Redis caching for idempotency tokens.
+- Estimated additional cost: $6,000 pending approval.
+
+Action Items:
+- Dana to prepare initial module skeleton by Nov 18.
+- Ravi to benchmark legacy processor speed and share baseline metrics.
+- Charlie to finalize architecture diagram and circulate by Nov 17.
+
+Status: Today – In Progress

@@ -1,0 +1,14 @@
+Meeting Notes: Algorithms – Project Strategy Discussion
+
+Date: 2025-11-14
+Attendees: Prof. Dana, Class
+
+Key Discussion Points:
+- Discussed divide-and-conquer vs DP approaches.
+- Example: Median of two sorted arrays.
+- Students must compare complexities in final report.
+
+Action Items:
+- Submit proposal draft by Nov 18.
+
+Status: Completed

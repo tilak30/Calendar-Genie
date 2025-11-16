@@ -12,6 +12,7 @@ class ConversationAnalysisAgent:
         )
         self.model = "anthropic/claude-3-5-sonnet"
         self.meetings = self._load_meetings()
+        self.conversation_history = [] 
     
     def _load_meetings(self) -> list:
         """Load all meetings from meeting.json"""
@@ -39,17 +40,13 @@ class ConversationAnalysisAgent:
         else:
             history_text = "No previous conversation yet"
         
-        # Check if query is about meetings
-        meeting_keywords = ['meeting', 'upcoming', 'schedule', 'calendar', 'events', 'next', 'attend', 'class', 'office hours']
-        query_lower = query.lower()
-        is_meeting_query = any(kw in query_lower for kw in meeting_keywords)
-        
-        # Build prompt with meetings context if relevant
+        # Always provide full meetings JSON so LLM can access every field
         meetings_context = ""
-        if is_meeting_query and self.meetings:
-            meetings_context = "\n\nAVAILABLE MEETINGS (from meeting.json):\n"
-            for m in self.meetings[:5]:
-                meetings_context += f"- {m['title']} ({m['start_time']})\n"
+        try:
+            if self.meetings:
+                meetings_context = "\n\nALL_MEETINGS_JSON (from meeting.json):\n" + json.dumps(self.meetings)
+        except Exception:
+            meetings_context = "\n\nALL_MEETINGS_JSON: []"
         
         # Build prompt
         prompt = f"""You are an intelligent meeting prep agent helping a student.
@@ -100,7 +97,8 @@ Respond ONLY with valid JSON:
             # Validate
             if decision.get("decision") not in ["drive", "web", "hybrid", "meetings", "history"]:
                 decision["decision"] = "hybrid"
-            
+            self.conversation_history.append({"role": "assistant", "content": message})
+
             return decision
             
         except json.JSONDecodeError:

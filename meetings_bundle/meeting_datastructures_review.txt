@@ -1,0 +1,15 @@
+Meeting Notes: Data Structures – Review Session
+
+Date: 2025-11-15
+Attendees: Prof. Smith, You
+
+Key Discussion Points:
+- Reviewed AVL trees and rotations for next week's quiz.
+- Clarified confusion around tree height updates.
+- Extra practice problems shared on balanced BSTs.
+
+Action Items:
+- You will complete worksheet #5 before Nov 17.
+- Prof. Smith will upload rotation animations.
+
+Status: Today – Active

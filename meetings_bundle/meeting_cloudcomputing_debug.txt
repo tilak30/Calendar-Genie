@@ -1,0 +1,15 @@
+Meeting Notes: Cloud Computing – Deployment Debugging
+
+Date: 2025-11-14
+Attendees: Prof. Adams, Team
+
+Key Discussion Points:
+- K8s deployment failed due to selector mismatch.
+- GitHub Actions runner permissions corrected.
+- Prometheus scrape config updated.
+
+Action Items:
+- Fix Dockerfile permissions.
+- Update service manifests before next class.
+
+Status: Completed

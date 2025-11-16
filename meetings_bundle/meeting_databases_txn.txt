@@ -1,0 +1,14 @@
+Meeting Notes: Databases – Transaction Systems
+
+Date: 2025-11-14
+Attendees: Prof. Helena, Class
+
+Key Discussion Points:
+- ACID deep dive focusing on isolation anomalies.
+- Phantom reads examples discussed.
+- Final project team assignments confirmed.
+
+Action Items:
+- Submit ER diagrams by Nov 19.
+
+Status: Completed

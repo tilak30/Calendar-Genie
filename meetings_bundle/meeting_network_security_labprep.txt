@@ -1,0 +1,15 @@
+Meeting Notes: Network Security – Lab 3 Preparation
+
+Date: 2025-11-15
+Attendees: Prof. Singh, TA Team
+
+Key Discussion Points:
+- MITM + ARP spoofing scenarios finalized.
+- Students struggled with Wireshark filters; plan to add tutorial.
+- Firewall rule misconfigurations from last semester discussed.
+
+Action Items:
+- TA team to record a short walkthrough video.
+- Prof. Singh to finalize grading script.
+
+Status: Today – Active

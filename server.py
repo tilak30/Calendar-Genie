@@ -64,12 +64,16 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 # Mock mode
 MOCK_AUTH = os.getenv("MOCK_AUTH", "false").lower() == "true"
 
-# Load mock meetings
-try:
-    with open('meeting.json', 'r') as f:
-        MOCK_MEETINGS = json.load(f)['meetings']
-except:
-    MOCK_MEETINGS = []
+def _load_mock_meetings() -> list:
+    try:
+        with open('meeting.json', 'r') as f:
+            data = json.load(f)
+            return data.get('meetings', [])
+    except Exception:
+        return []
+
+# Load mock meetings (initial)
+MOCK_MEETINGS = _load_mock_meetings()
 
 # ============================================================================
 # IMPORTS - Agent Classes
@@ -217,14 +221,56 @@ Summarize in 1-2 sentences for query: "{query}" """
     
     return summaries
 
-def _synthesize_answer(query: str, summary: dict, meeting: dict) -> str:
-    """Generate final chat response"""
+def _synthesize_answer(query: str, summary: dict, meeting: dict, history: List[Dict], all_meetings: List[Dict]) -> str:
+    """Generate final chat response, including recent conversation history so the LLM can refer back.
+
+    history: list of dicts with keys 'query' and 'answer'
+    """
     rag_part = f"From course materials: {summary.get('rag', '')}" if summary.get('rag') else ""
     web_part = f"From research: {summary.get('web', '')}" if summary.get('web') else ""
     meetings_part = f"\n\nSTUDENT'S CALENDAR:\n{summary.get('meetings', '')}" if summary.get('meetings') else ""
-    
+
+    # Build conversation history text (last 8 turns)
+    history_text = "No prior conversation."
+    try:
+        if history:
+            lines = []
+            recent = history[-8:]
+            for i, turn in enumerate(recent):
+                q = turn.get('query', '')
+                a = turn.get('answer', '')
+                lines.append(f"User: {q}")
+                lines.append(f"Assistant: {a}")
+            history_text = "\n".join(lines)
+    except Exception:
+        history_text = "(unable to load history)"
+
+    # Full meetings JSON to give the model complete context
+    try:
+        all_meetings_json = json.dumps(all_meetings) if all_meetings else "[]"
+    except Exception:
+        all_meetings_json = "[]"
+
+    # Decide response style: concise by default; detailed only if asked explicitly
+    ql = (query or "").lower()
+    wants_detail = any(w in ql for w in ["explain", "details", "in detail", "elaborate", "why", "how", "walk me through"])
+    style_instructions = (
+        "Be concise: answer in 2-4 sentences. If a list is helpful, keep it short."
+        if not wants_detail else
+        "Provide a thorough, detailed explanation with clear structure."
+    )
+
+    # Current local date/time context for correct tense
+    try:
+        now_local = datetime.now().astimezone().strftime("%b %d, %Y %I:%M %p %Z").lstrip('0')
+    except Exception:
+        now_local = "(unknown)"
+
     prompt = f"""Meeting: {meeting.get('title', 'Unknown')}, {meeting.get('description', '')}
 Meeting time: {meeting.get('start_time', 'N/A')}, Location: {meeting.get('location', 'N/A')}
+
+RECENT CONVERSATION:
+{history_text}
 
 Student Question: "{query}"
 
@@ -233,14 +279,22 @@ Student Question: "{query}"
 {web_part}
 {meetings_part}
 
+ALL MEETINGS (full JSON from meeting.json):
+{all_meetings_json}
+
 ---
 
 Write a helpful, coherent chat response that:
 1. Directly answers the student's question
-2. Combines all available sources naturally
-3. Is conversational (2-3 paragraphs)
-4. Explains concepts clearly"""
-    
+2. References earlier conversation when relevant
+3. Combines all available sources naturally
+4. {style_instructions}
+5. Use correct tense based on time. Current local date/time is: {now_local}.
+   - Use past tense when referring to meetings that have already ended.
+   - Use present progressive for meetings happening right now.
+   - Use future tense for upcoming meetings.
+6. If the user asks a follow-up, clarify what was asked before you change the topic."""
+
     try:
         completion = synthesizer_client.chat.completions.create(
             model="anthropic/claude-3-5-sonnet",
@@ -410,8 +464,17 @@ async def prep_meeting(request: Request):
     
     # Determine meeting data and keep full meetings list accessible
     if data.get('meetings') and 'mock_index' in data:
-        meeting_data = MOCK_MEETINGS[data.get('mock_index', 0)]
-        meetings_list = MOCK_MEETINGS
+        # Fresh-load meetings from disk so updates in meeting.json are picked up without restart
+        latest_meetings = _load_mock_meetings()
+        idx = data.get('mock_index', 0)
+        if not latest_meetings:
+            latest_meetings = MOCK_MEETINGS
+        if not latest_meetings:
+            raise HTTPException(status_code=400, detail="No meetings available")
+        if idx < 0 or idx >= len(latest_meetings):
+            idx = 0
+        meeting_data = latest_meetings[idx]
+        meetings_list = latest_meetings
     else:
         meeting_data = data.get('meeting_data', {})
         # Normalize to list: if user provided array, use it, otherwise wrap single meeting
@@ -438,6 +501,61 @@ async def prep_meeting(request: Request):
         "meeting": meeting_data,
         "all_meetings": meetings_list
     }
+
+
+@app.get("/api/meetings")
+async def get_all_meetings(request: Request):
+    """Return the full list of meetings (all fields).
+
+    - In MOCK mode this returns the contents of `meeting.json`.
+    - In real mode this requires an authenticated session and returns the meetings
+      stored for that session (if any), otherwise falls back to the disk file.
+    This endpoint intentionally takes no parameters and returns the full meeting objects.
+    """
+    # If in mock mode, return the latest meetings from disk (no restart required)
+    if MOCK_AUTH:
+        latest = _load_mock_meetings()
+        return {"meetings": latest if latest else MOCK_MEETINGS}
+
+    # Otherwise require a valid session
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_session = get_session(session_id)
+    if not user_session:
+        raise HTTPException(status_code=401, detail="Session expired")
+
+    # Collect meetings stored in the user's session
+    collected = []
+    for m in user_session.get('meetings', {}).values():
+        # Each stored meeting may include 'data' and/or 'all_meetings'
+        if isinstance(m.get('all_meetings'), list) and m.get('all_meetings'):
+            collected.extend(m.get('all_meetings'))
+        elif m.get('data'):
+            collected.append(m.get('data'))
+
+    # Fallback to disk if nothing in session
+    if not collected:
+        try:
+            with open('meeting.json','r') as f:
+                collected = json.load(f).get('meetings', [])
+        except Exception:
+            collected = MOCK_MEETINGS
+
+    return {"meetings": collected}
+
+@app.post("/api/reload-meetings")
+async def reload_meetings():
+    """Reload meetings from meeting.json into memory and return count.
+
+    Useful in mock mode to reflect updates without restarting the server.
+    """
+    global MOCK_MEETINGS
+    latest = _load_mock_meetings()
+    if latest:
+        MOCK_MEETINGS = latest
+    return {"reloaded": True, "count": len(MOCK_MEETINGS)}
 
 @app.post("/api/chat")
 async def chat(request: Request):
@@ -481,8 +599,9 @@ async def chat(request: Request):
     # ─── STEP 3: Generate summary ───
     summary = _generate_summary(query, content)
     
-    # ─── STEP 4: Synthesize answer ───
-    final_answer = _synthesize_answer(query, summary, meeting_data)
+    # ─── STEP 4: Synthesize answer (include history for context) ───
+    all_meetings = user_session['meetings'][meeting_session_id].get('all_meetings', [])
+    final_answer = _synthesize_answer(query, summary, meeting_data, history, all_meetings)
     
     # ─── STEP 5: Generate audio ───
     audio_url = await generate_audio_with_elevenlabs(final_answer)
@@ -505,8 +624,10 @@ async def chat(request: Request):
         "audio_url": audio_url,
         "sources": {
             "rag": content.get("rag", ""),
-            "web": content.get("web", "")
+            "web": content.get("web", ""),
+            "meetings": content.get("meetings", "")
         },
+        "meetings_structured": content.get("meetings_structured", []),
         "decision": decision.get('decision'),
         "reasoning": decision.get('reasoning'),
         "source": "private_docs"

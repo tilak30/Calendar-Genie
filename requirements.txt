@@ -12,3 +12,6 @@ openai
 httpx
 requests
 pydantic
+llama-index
+llama-index-embeddings-huggingface
+watchdog

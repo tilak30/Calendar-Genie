@@ -1,0 +1,15 @@
+Meeting Notes: Big Data – Hadoop Job Review
+
+Date: 2025-11-14
+Attendees: Prof. Lee, You
+
+Key Discussion Points:
+- Analyzed reducer bottleneck in MapReduce HW3.
+- Spark SQL join optimizations discussed.
+- Demonstrated partition pruning on large datasets.
+
+Action Items:
+- You will refactor reducer to use combiners.
+- Prof. Lee enabling log access for deeper debugging.
+
+Status: Completed
