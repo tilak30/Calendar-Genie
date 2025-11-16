@@ -11,6 +11,7 @@
 let recognition = null;
 let recording = false;
 let currentUser = null;
+let currentMeetingSessionId = null;  // Track current meeting session
 
 // DOM elements (initialized in setupApp)
 let authScreen, appScreen, googleSigninBtn, logoutBtn, userEmailEl;
@@ -76,6 +77,9 @@ function initChat() {
     handleSend(input.value.trim());
   });
 
+  // Auto-prepare first meeting on init
+  prepareFirstMeeting();
+
   // Welcome message
   addMessage('Hello! I\'m Calendar-Genie. Type or say "Prep me" to prepare for your next meeting.', 'assistant');
 }
@@ -131,11 +135,48 @@ function removeLoading() {
 // ============================================================================
 
 /**
+ * Prepare first meeting session
+ * Must be called before sending chat messages
+ */
+async function prepareFirstMeeting() {
+  try {
+    const res = await fetch(`${API_BASE}/api/prep-meeting`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ 
+        meetings: true,  // Use mock meetings
+        mock_index: 0 
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error(`Prep meeting failed: ${res.status}`);
+    }
+
+    const data = await res.json();
+    currentMeetingSessionId = data.meeting_session_id;
+    console.log('✅ Meeting prepared:', data.meeting.title);
+  } catch (err) {
+    console.error('Prep meeting error:', err);
+    addMessage('⚠️ Could not prepare meeting. Retrying...', 'assistant');
+    setTimeout(prepareFirstMeeting, 2000);
+  }
+}
+
+/**
  * Send message to backend and handle response
  * @param {string} text - User message
  */
 async function handleSend(text) {
   if (!text || !text.trim()) return;
+
+  // Ensure meeting is prepared
+  if (!currentMeetingSessionId) {
+    addMessage('⚠️ Meeting not ready yet. Please wait...', 'assistant');
+    await prepareFirstMeeting();
+    return;
+  }
 
   addMessage(text, 'user');
   input.value = '';
@@ -146,7 +187,10 @@ async function handleSend(text) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ text })
+      body: JSON.stringify({ 
+        query: text,
+        meeting_session_id: currentMeetingSessionId
+      })
     });
 
     if (!res.ok) {
@@ -157,8 +201,8 @@ async function handleSend(text) {
     removeLoading();
 
     // Display response
-    const { text: responseText, audio_url, source } = data;
-    let displayText = responseText || '(No response)';
+    const { text: responseText, answer, audio_url, source } = data;
+    let displayText = answer || responseText || '(No response)';
 
     if (source === 'public_search') {
       displayText += '\n\n📌 (Info from Google Search)';
@@ -170,7 +214,7 @@ async function handleSend(text) {
     if (audio_url) {
       await playAudio(audio_url);
     } else {
-      speakTextFallback(responseText);
+      speakTextFallback(answer || responseText);
     }
 
   } catch (err) {
