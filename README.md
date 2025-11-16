@@ -89,17 +89,6 @@ python3 test_scheduler.py
 
 - `test_scheduler.py` includes offline stubs to test scheduling and replacement flows without live LLM keys.
 - `test_agent.py` exercises SmartFetcher behaviors.
-
-**Known issues & next steps**
-
-- ElevenLabs TTS may return 401 Unauthorized if `ELEVENLABS_API_KEY` is missing/invalid — add a valid key to `.env` to fix.
-- Vector RAG requires the appropriate embedding package (`llama_index.embeddings.huggingface` or similar). If missing, the app falls back to paragraph scoring.
-- Frontend confirmation UI can be improved: server supports `needs_confirmation` and `scheduler_details` for the UI to show confirm/cancel buttons.
-
-**Contributing**
-
-If you'd like me to commit this README change, run tests, or restart the server, tell me which action to take and I'll run it.
-
 ---
 
 Generated/updated on: 2025-11-16
